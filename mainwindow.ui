@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>724</width>
+    <height>625</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QTextEdit" name="rawInput"/>
+    </item>
+    <item row="0" column="1">
+     <widget class="QTextEdit" name="processedOut"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>724</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File(&amp;F)</string>
+    </property>
+    <addaction name="actionNewFile_N"/>
+    <addaction name="actionOpenFile_O"/>
+    <addaction name="actionClose_C"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_S"/>
+    <addaction name="actionSave_As_A"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit_X"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit(&amp;E)</string>
+    </property>
+    <addaction name="actionUndo_U"/>
+    <addaction name="separator"/>
+    <addaction name="actionCut_T"/>
+    <addaction name="actionCopy_C"/>
+    <addaction name="actionPaste_P"/>
+    <addaction name="actionDelete_L"/>
+    <addaction name="separator"/>
+    <addaction name="actionFind_F"/>
+    <addaction name="actionReplace_R"/>
+    <addaction name="separator"/>
+    <addaction name="actionSelectAll_A"/>
+   </widget>
+   <widget class="QMenu" name="menuBuild">
+    <property name="title">
+     <string>Build(&amp;B)</string>
+    </property>
+    <addaction name="actionBin"/>
+    <addaction name="actionHex"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveMachineCode"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help(&amp;H)</string>
+    </property>
+    <addaction name="actionViewHelo"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuBuild"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionNewFile_N"/>
+   <addaction name="actionOpenFile_O"/>
+   <addaction name="actionSave_S"/>
+   <addaction name="actionSave_As_A"/>
+   <addaction name="separator"/>
+   <addaction name="actionUndo_U"/>
+   <addaction name="actionFind_F"/>
+   <addaction name="actionReplace_R"/>
+   <addaction name="separator"/>
+   <addaction name="separator"/>
+   <addaction name="actionViewHelo"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionNewFile_N">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/document-new.png</normaloff>:/images/actions/document-new.png</iconset>
+   </property>
+   <property name="text">
+    <string>NewFile(&amp;N)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionOpenFile_O">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/document-open.png</normaloff>:/images/actions/document-open.png</iconset>
+   </property>
+   <property name="text">
+    <string>OpenFile(&amp;O)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave_S">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/document-save.png</normaloff>:/images/actions/document-save.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save(&amp;S)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionSave_As_A">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/document-save-as.png</normaloff>:/images/actions/document-save-as.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save As(&amp;A)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="actionPrint_P">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/document-print.png</normaloff>:/images/actions/document-print.png</iconset>
+   </property>
+   <property name="text">
+    <string>Print(&amp;P)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionExit_X">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/exit.png</normaloff>:/images/actions/exit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Exit(&amp;X)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionUndo_U">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-undo.png</normaloff>:/images/actions/edit-undo.png</iconset>
+   </property>
+   <property name="text">
+    <string>Undo(&amp;U)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionCut_T">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-cut.png</normaloff>:/images/actions/edit-cut.png</iconset>
+   </property>
+   <property name="text">
+    <string>Cut(&amp;T)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
+   </property>
+  </action>
+  <action name="actionCopy_C">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-copy.png</normaloff>:/images/actions/edit-copy.png</iconset>
+   </property>
+   <property name="text">
+    <string>Copy(&amp;C)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionPaste_P">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-paste.png</normaloff>:/images/actions/edit-paste.png</iconset>
+   </property>
+   <property name="text">
+    <string>Paste(&amp;P)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="actionDelete_L">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-delete.png</normaloff>:/images/actions/edit-delete.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete(&amp;L)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionFind_F">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-find.png</normaloff>:/images/actions/edit-find.png</iconset>
+   </property>
+   <property name="text">
+    <string>Find(&amp;F)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionReplace_R">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-find-replace.png</normaloff>:/images/actions/edit-find-replace.png</iconset>
+   </property>
+   <property name="text">
+    <string>Replace(&amp;R)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionSelectAll_A">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/edit-select-all.png</normaloff>:/images/actions/edit-select-all.png</iconset>
+   </property>
+   <property name="text">
+    <string>SelectAll(&amp;A)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actionBin">
+   <property name="text">
+    <string>Bin</string>
+   </property>
+  </action>
+  <action name="actionHex">
+   <property name="text">
+    <string>Hex</string>
+   </property>
+  </action>
+  <action name="actionViewHelo">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/gtk-help.png</normaloff>:/images/actions/gtk-help.png</iconset>
+   </property>
+   <property name="text">
+    <string>ViewHelp</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
+   </property>
+  </action>
+  <action name="actionClose_C">
+   <property name="icon">
+    <iconset resource="myicons.qrc">
+     <normaloff>:/images/actions/gtk-close.png</normaloff>:/images/actions/gtk-close.png</iconset>
+   </property>
+   <property name="text">
+    <string>Close(C)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionSaveMachineCode">
+   <property name="text">
+    <string>Save MC</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="myicons.qrc"/>
+ </resources>
+ <connections/>
+</ui>
