@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include "assembler.h"
+#include "stimulate.h"
 #include "mnemonic.h"
 #include "register.h"
 

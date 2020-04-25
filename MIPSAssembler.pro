@@ -31,7 +31,8 @@ SOURCES += \
     assembler.cpp \
     hightlight.cpp \
     disassembler.cpp \
-    filehandler.cpp
+    filehandler.cpp \
+    stimulate.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -40,11 +41,13 @@ HEADERS += \
     register.h \
     highlight.h \
     disassembler.h \
-    filehandler.h
+    filehandler.h \
+    stimulate.h
 
 FORMS += \
         mainwindow.ui
 
 RESOURCES += \
-    myicons.qrc
+    myicons.qrc \
+    ziku.qrc
 

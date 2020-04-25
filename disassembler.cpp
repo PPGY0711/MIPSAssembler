@@ -1,7 +1,6 @@
 #include "disassembler.h"
 #include "filehandler.h"
-#include "mnemonic.h"
-#include "register.h"
+#include "stimulate.h"
 #include <bitset>
 #include <iostream>
 #define ORIGIN 0x0000
@@ -10,13 +9,14 @@
 //string ErrorMsg = "No Error.\n";
 TotalMs dms;
 Regs dRegs;
-enum InstType{R=0,I,J};
+enum InstType{R=0,I,J,C};
 map<string, unsigned int> LabelSet;
 map<unsigned int, string> revLabelSet;
 
 string parseStatement(string bincode, int lineNum){
     //cout << "here" << endl;
     string asmcode;
+    unsigned int word;
     int iType = -1;
     int opc = binStr2dex(bincode.substr(0,6));
     int func = binStr2dex(bincode.substr(26,6));
@@ -24,7 +24,9 @@ string parseStatement(string bincode, int lineNum){
     string mnemonic = getMnemonic(dms, opc,func,r3num,&iType);
     cout << "mnemonic: " << mnemonic << " type: " << iType << endl;
     if(mnemonic == "ERROR"){
-        asmcode = "Not Valid Machine Code!";
+        //没有对应的就翻译成格式指令
+        word = strtoul(bincode.c_str(),NULL,2);
+        asmcode = ".word " + udex2str(word);
     }
     else{
         switch (iType) {
@@ -37,6 +39,8 @@ string parseStatement(string bincode, int lineNum){
         case J:
             asmcode = JmcTranslate(bincode,mnemonic,lineNum);
             break;
+        case C:
+            asmcode = CmcTranslate(bincode,mnemonic);
         }
     }
     return asmcode;
@@ -110,14 +114,8 @@ static string RmcTranslate(string code, string mnemonic){
     case 15: //case "jalr":
         asmcode = mnemonic + " " + rs + ", " + rd;
         break;
-        //mne rt,rc
-    case 26: //case "mfc0":
-    case 27: //case "mtc0":
-        asmcode = mnemonic + " " + rt + ", " + rd;
-        break;
         //mne
     case 16: //case "syscall":
-    case 28: //case "eret":
         asmcode = mnemonic;
         break;
         //mne rs,rt
@@ -126,6 +124,45 @@ static string RmcTranslate(string code, string mnemonic){
     case 20: //case "div":
     case 21: //case "divu":
         asmcode = mnemonic + " " + rs + ", " + rt;
+    default:
+        break;
+    }
+    cout<< "asmcode: " << asmcode<<endl;
+    return asmcode;
+}
+
+static string CmcTranslate(string code, string mnemonic){
+    int rtnum,rcnum;
+    string rt,rc,asmcode;
+    rtnum = strtoul(code.substr(11,5).c_str(),NULL,2);
+    rcnum = strtoul(code.substr(16,5).c_str(),NULL,2);
+    rt = dRegs->dRegWordTbl[rtnum];
+    rc = dRegs->dRegCoWordTbl[rcnum];
+    cout << "C: " << "rt: " <<rt << "rc: " << rc << endl;
+    asmcode = "";
+    int mnecode = dms->mne2codeTbl[mnemonic];
+    /*
+    string allmnemonics[RINSNUM+IINSNUM+JINSNUM] = {
+        "add","sub","slt","sltu","and","or","xor","nor",
+        "sll","sllv","srl","srlv","sra","srav","jr","jalr",
+        "syscall","mul","mult","multu","div","divu","mfhi",
+        "mflo","mthi","mtlo","mfc0","mtc0","eret",
+        "lui","addi","slti","sltiu","andi","ori","xori",
+        "lw","lwx","lh","lhx","lhu","lhux","sw","swx","sh","shx",
+        "beq","bne","bgezal",
+        "j","jal"
+    };
+*/
+    switch (mnecode) {
+        //mne rt,rc
+    case 26: //case "mfc0":
+    case 27: //case "mtc0":
+        asmcode = mnemonic + " " + rt + ", " + rc;
+        break;
+        //mne
+    case 28: //case "eret":
+        asmcode = mnemonic;
+        break;
     default:
         break;
     }
@@ -247,6 +284,8 @@ static string JmcTranslate(string code, string mnemonic ,int lineNum){
 }
 
 string disassembler(string machinecode){
+    LabelSet.clear();
+    revLabelSet.clear();
     dRegs = initRegTbls();
     dms = initMnemonicTbls();
     string mc = machinecode;

@@ -25,4 +25,15 @@ unsigned int ubinStr2dex(string ubs);
 int binStr2dex(string bs);
 string dex2str(int num);
 string udex2str(unsigned int num);
+//判断某字符串代表的数是否在（-32768~32767）的范围内
+static long long getValue(string s);
+int isWithinLimit(string s);
+int getHighBits(string s);
+int getLowBits(string s);
+int containLetter(string s);
+int isEmpty(string s);
+//将格式指令的变量表解析成单元素
+vector<string> splitElement(string s);
+//返回字符串表示的变量类型
+int getVariableType(string v);
 #endif

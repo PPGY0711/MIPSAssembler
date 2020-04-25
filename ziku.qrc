@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/encoding">
+        <file>ziku/HZK16</file>
+        <file>ziku/mhzk16c</file>
+    </qresource>
+</RCC>

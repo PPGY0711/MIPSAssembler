@@ -10,7 +10,7 @@
 #include <map>
 using namespace std;
 #define CPURNUM 32
-#define COPRORNUM 25
+#define COPRORNUM 3
 #define NOTEXIST -1
 typedef struct Registers* Regs;
 struct Registers
@@ -26,21 +26,14 @@ struct Registers
         "$17","$18","$19","$20","$21","$22","$23","$24",
         "$25","$26","$27","$28","$29","$30","$31" };
     //待完善的协处理器部分
-    string coprocessor[COPRORNUM] = {
-        "Index","Random","EntryLo0","EntryLo1","Context",
-        "PageMask","Wired","BadVAddr","Count","EntryHi",
-        "Compare","Status","Cause","Cause","EPC","PRId",
-        "Config","WatchLo","WatchHi","Debug","DEPC","ErrCtl",
-        "TagLo","ErrorEPC","DESAVE"
-    };
+    string coprocessor[COPRORNUM] = { "STATUS","CAUSE","EPC" };
     //寄存器内容
     unsigned int regContent[32] = {0};
     unsigned int regCoContent[32] = {0};
 
     int regNum[CPURNUM] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
                         20,21,22,23,24,25,26,27,28,29,30,31 };
-    int regNumCo[COPRORNUM] = { 0,1,2,3,4,5,6,8,9,10,11,12,13,14,15,16,17,18,19,
-                        23,24,26,28,30,31 };
+    int regNumCo[COPRORNUM] = { 12,13,14 };
 
     map<string, int> regWordTbl;
     map<string, int> regNumTbl;

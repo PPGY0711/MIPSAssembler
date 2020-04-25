@@ -65,6 +65,13 @@ string trim(string& str)
     return ret;
 }
 
+int isEmpty(string s)
+{
+    if (trim(s) == "")
+        return 1;
+    return 0;
+}
+
 unsigned int c_in_str(const char * str, char ch)
 {
     unsigned int count = 0;
@@ -160,12 +167,14 @@ void getRidOfNotes(string& ret)
 unsigned int ubinStr2dex(string ubs){
     unsigned int res = 0;
     res = strtoul(ubs.c_str(),NULL,2);
+    return res;
 }
 
 int binStr2dex(string bs){
     int res = 0;
     //bs是补码表示的
     res =strtol(bs.c_str(),NULL,2);
+    return res;
 }
 
 string dex2str(int num){
@@ -190,4 +199,88 @@ string udex2str(unsigned int num){
     }
     res[j] = '\0';
     return res;
+}
+
+static long long getValue(string s)
+{
+    s = trim(s);
+    long long value;
+    if(s.substr(0,2) == "0x"){
+        //s为十六进制字符串
+         value = strtoll(s.c_str(),NULL,16);
+    }
+    else{
+        //默认为十进制字符串
+        value = strtoll(s.c_str(),NULL,10);
+    }
+    return value;
+}
+
+int isWithinLimit(string s){
+    long long value = getValue(s);
+    if(value > 32767 || value <-32768){
+        return 0;
+    }
+    else
+        return 1;
+}
+
+int getHighBits(string s){
+    long long value = getValue(s);
+    value = value >> 4;
+    int v = value&0x0000FFFF;
+    return v;
+}
+
+int getLowBits(string s){
+    long long value = getValue(s);
+    int v = value&0x0000FFFF;
+    return v;
+}
+
+int containLetter(string s){
+    for(int i = 0; i < strlen(s.c_str());i++){
+        if((s[i] <= 'z' && s[i] >= 'a') || (s[i] >= 'A' && s[i] <= 'Z'))
+            return 1;
+    }
+    return 0;
+}
+
+vector<string> splitElement(string s){
+    vector<string> res;
+    if(s.find(',') == string::npos){
+        res.push_back(s);
+        return res;
+    }
+    vector<string> tmpres = splitC(s,',');
+    string ele = "";
+    for(int i = 0; i<tmpres.size();i++){
+        if(tmpres[i].length()){
+            if(tmpres[i][0] == '\''&&tmpres[i][tmpres[i].length()-1] != '\''){
+                ele += tmpres[i] + ",";
+            }
+            else if(tmpres[i][0] == '\''&&tmpres[i][tmpres[i].length()-1] == '\''){
+                ele = tmpres[i];
+                res.push_back(ele);
+            }
+            else if(tmpres[i][0] != '\''&&tmpres[i][tmpres[i].length()-1] == '\''){
+                ele += tmpres[i];
+                res.push_back(ele);
+            }
+            else if(tmpres[i].find('\'') == string::npos){
+                ele = tmpres[i];
+                res.push_back(ele);
+            }
+        }
+    }
+    return res;
+}
+
+int getVariableType(string v){
+    if(v.find('\'')==string::npos)
+        return 0;//NUM
+    else if(v.length()==3 && v[0]=='\'' && v[2] =='\'')
+        return 2; //CHAR
+    else
+        return 1;//STR
 }

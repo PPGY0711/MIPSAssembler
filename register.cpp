@@ -54,6 +54,8 @@ int getRegisterNum(string name, Regs Rs)
         return Rs->regWordTbl[name];
     else if (Rs->regNumTbl.find(name) != Rs->regNumTbl.end())
         return Rs->regNumTbl[name];
+    else if(Rs->regCoWordTbl.find(name) != Rs->regCoWordTbl.end())
+        return Rs->regCoWordTbl[name];
     else
         return NOTEXIST;
 }
