@@ -33,11 +33,9 @@ struct Registers
         "Config","WatchLo","WatchHi","Debug","DEPC","ErrCtl",
         "TagLo","ErrorEPC","DESAVE"
     };
-    string regContent[CPURNUM] = { "0" };
-    string coproContent[COPRORNUM] = { "0" };
-
-    string hiContent = { "0" };
-    string loContent = { "0" };
+    //寄存器内容
+    unsigned int regContent[32] = {0};
+    unsigned int regCoContent[32] = {0};
 
     int regNum[CPURNUM] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
                         20,21,22,23,24,25,26,27,28,29,30,31 };
@@ -47,6 +45,8 @@ struct Registers
     map<string, int> regWordTbl;
     map<string, int> regNumTbl;
     map<string, int> regCoWordTbl;
+    map<int, string> dRegWordTbl;
+    map<int, string> dRegCoWordTbl;
 };
 
 //初始化寄存器相关函数
@@ -55,4 +55,7 @@ int getRegisterNum(string name, Regs Rs);
 static void createRegCoWordTbl(Regs* Rs);
 static void createRegWordTbl(Regs* Rs);
 static void createRegNumTbl(Regs* Rs);
+static void createDRegWordTbl(Regs* Rs);
+static void createDRegCoWordTbl(Regs* Rs);
+
 #endif // !_REGISTERS_H_

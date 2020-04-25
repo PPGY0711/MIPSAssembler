@@ -2,6 +2,7 @@
 #include "assembler.h"
 #include "mnemonic.h"
 #include "register.h"
+#include "filehandler.h"
 #include <fstream>
 #include <vector>
 #include <cstdlib>
@@ -10,107 +11,13 @@
 #include <stack>
 #include <math.h>
 #include <string.h>
+#include <iostream>
 #define DAUFAULTORIGIN 0x0000
 #define ERROR -99999
 //控制用全局变量定义
 string ErrorMsg = "No Error.\n";
 TotalMs ms;
 Regs rgs;
-
-string readInputFile(string filename) {
-    ifstream asmFile(filename);
-    string asmcode((istreambuf_iterator<char>(asmFile)), istreambuf_iterator<char>());
-    return asmcode;
-}
-
-static vector<string> splitC(string s, char delim)
-{
-    vector<string> v;
-    stringstream stringstream1(s);
-    string tmp;
-    while (getline(stringstream1, tmp, delim)) {
-        v.push_back(tmp);
-    }
-    return v;
-}
-
-static void getRidOfNotes(string& ret)
-{
-    int index = 0;
-    //remove notations begin with "#"
-    if (!ret.empty())
-    {
-        while ((index = ret.find("#", index)) != string::npos)
-        {
-            if (ret.find("\n") == string::npos)
-            {
-                ret = ret.erase(index, ret.length() - index);
-            }
-            else
-            {
-                ret = ret.erase(index, ret.find_first_of("\n", index) - index);
-            }
-        }
-    }
-}
-
-static string trim(string& str)
-{
-    string ret = str;
-    int index = 0;
-    //remove extra spaces and enters
-    if (!ret.empty())
-    {
-        while ((index = ret.find(' ', index)) != string::npos)
-        {
-            ret = ret.erase(index, 1);
-        }
-    }
-    index = 0;
-    if (!ret.empty())
-    {
-        while ((index = ret.find('\n', index)) != string::npos)
-        {
-            ret = ret.erase(index, 1);
-        }
-    }
-    index = 0;
-    if (!ret.empty())
-    {
-        while ((index = ret.find('\t', index)) != string::npos)
-        {
-            ret = ret.erase(index, 1);
-        }
-    }
-    index = 0;
-    if (!ret.empty())
-    {
-        while ((index = ret.find('\f', index)) != string::npos)
-        {
-            ret = ret.erase(index, 1);
-        }
-    }
-    index = 0;
-    if (!ret.empty())
-    {
-        while ((index = ret.find('\v', index)) != string::npos)
-        {
-            ret = ret.erase(index, 1);
-        }
-    }
-    return ret;
-}
-
-/*	string insName[FINSNUM] = { "equ",".origin",".data",".text",".end",
-                                ".space", ".zjie", ".2zjie", ".word"}
-                                */
-static void handleformatCode(string asc, string& exc, string& dtc, string& ftc)
-{
-    dtc.assign("");
-    ftc.assign("");
-    exc.assign(asc);
-    //格式指令待处理
-}
 
 static int isPseudo(string s)
 {
@@ -119,27 +26,15 @@ static int isPseudo(string s)
         if (s.find(':') == string::npos)
             tmpm = (s.substr(0, s.find_first_of('$')));
         else
-            tmpm = (s.substr(s.find_first_of(':') + 1, s.find_first_of('$')));
+            tmpm = (s.substr(s.find_first_of(':') + 1, s.find_first_of('$')-s.find_first_of(':')-1));
     else if (s.find("b ") != string::npos)
         tmpm = "b";
     tmpm = trim(tmpm);
+    cout<< "isPseudo: " << tmpm <<endl;
     if (ms->PseudoTbl.find(tmpm) == ms->PseudoTbl.end())
         return 0;
     else
         return 1;
-}
-
-static unsigned int c_in_str(const char * str, char ch)
-{
-    unsigned int count = 0;
-
-    while (*str)  //字符串本身自己带有空值字符
-    {
-        if (*str == ch)
-            count++;
-        str++;
-    }
-    return count;
 }
 
 static string repPseudoWithGeneral(string s)
@@ -150,6 +45,10 @@ static string repPseudoWithGeneral(string s)
     char* ss = new char[16];
     vector<string> regArray;
     int which;
+    string label = "";
+    if(s.find(':') !=string::npos)
+        label = s.substr(0,s.find_first_of(':'));
+    label = trim(label);
     if (s.find('$') != string::npos)
         if (s.find(':') == string::npos)
             mne = (s.substr(0, s.find_first_of('$')));
@@ -292,6 +191,7 @@ static string repPseudoWithGeneral(string s)
         newstr += "sltu " + regArray[0] + ",$zero," + regArray[0] + "\n";
         break;
     }
+    newstr = label + ": " + newstr;
     return newstr;
 }
 
@@ -307,15 +207,9 @@ void firstScan(string asmcode, ACRec* asmC)
 {
     //消除注释
     getRidOfNotes(asmcode);
-    //处理格式指令,填变量表,计算代数表达式的值（待完善）
-    string execcode;
-    string datacode;
-    string formatcode;
-    handleformatCode(asmcode, execcode, datacode, formatcode);
-
     int tmpid = 0;
     //替换伪指令
-    vector<string> tmpcodePerLine = splitC(execcode, '\n');
+    vector<string> tmpcodePerLine = splitC(asmcode, '\n');
     vector<string> codePerLine;
     for (int i = 0; i < tmpcodePerLine.size(); i++) {
         if (isPseudo(tmpcodePerLine[i])) {
@@ -324,12 +218,13 @@ void firstScan(string asmcode, ACRec* asmC)
                 codePerLine.push_back(repstr[j]);
             }
         }
+        //这一步加到汇编代码中的还有格式指令
         else if(!(isEmpty(tmpcodePerLine[i])))
             codePerLine.push_back(tmpcodePerLine[i]);
     }
     //处理标号
     for (int i = 0; i < codePerLine.size(); i++) {
-
+        cout<< "Line[" << i << "]:" << codePerLine[i] <<endl;
         if ((tmpid = codePerLine[i].find(':')) != string::npos)
         {
             if (!insertLabel(codePerLine[i], i, (*asmC)->LTbl)) {
@@ -348,6 +243,7 @@ void firstScan(string asmcode, ACRec* asmC)
             (*asmC)->LETbl.insert(pair<int, string>(i, "-"));
         }
     }
+
 }
 
 static int insertLabel(string s, int linenum, map<string, int>& tbl)
@@ -355,6 +251,7 @@ static int insertLabel(string s, int linenum, map<string, int>& tbl)
     string tmpL = s.substr(0, s.find_first_of(':'));
     trim(tmpL);
     if (tbl.find(tmpL) == tbl.end()) {
+        cout<< "insert label: " << tmpL << " at Line[" << linenum <<"]"<<endl;
         tbl.insert(pair<string, int>(tmpL, linenum));
         return 1;
     }
@@ -366,11 +263,20 @@ static int insertLabel(string s, int linenum, map<string, int>& tbl)
 void genMachineCode(ACRec* asmC, MCSet* mcSet)
 {
     //此版本未处理格式指令，令代码汇编初始地址都是0x0000
+    //第二次扫描开始前，把有标号的行的地址先填到AddrTbl表中
+    map<string, int>::iterator tmpit;
+    tmpit = (*asmC)->LTbl.begin();
+    while(tmpit!=(*asmC)->LTbl.end()){
+        (*mcSet)->AddrTbl.insert(pair<int, unsigned int>(tmpit->second, DAUFAULTORIGIN + (tmpit->second * 2)));
+        cout << tmpit->first << " " <<DAUFAULTORIGIN + (tmpit->second * 2) <<endl;
+        tmpit++;
+    }
     map<int, string>::iterator iter;
     iter = (*asmC)->CodeTbl.begin();
     while (iter != (*asmC)->CodeTbl.end()) {
         //1.生成每行指令的"绝对"地址（初始地址加上偏移）
         (*mcSet)->AddrTbl.insert(pair<int, unsigned int>(iter->first, DAUFAULTORIGIN + (iter->first * 2)));
+        cout << "insert Addr at Line[" <<iter->first <<"] :" <<  DAUFAULTORIGIN + (iter->first * 2) <<endl;
         //2.翻译指令
         string tmpmenomic, machineCode;
         //不带寄存器符号的eret/syscall
@@ -683,13 +589,17 @@ static string JtTranslate(string code, int linenum, MCSet* mcSet, ACRec* asmC)
         ErrorMsg.assign("Error: Undefined mnemonic used!\n");
     opc = ms->JtypeToOpcTbl[mne];
     label = trim(label);
+    cout<< "jump to label: " << label <<endl;
     if ((*asmC)->LTbl.find(label) != (*asmC)->LTbl.end())
     {
         addr = ((*mcSet)->AddrTbl[(*asmC)->LTbl[label]]) / 2;
+        cout << "labelline: " << (*asmC)->LTbl[label] <<endl;
+        cout << "labeladdr: " << addr <<endl;
         bitset<6> opcb(opc);
         bitset<26> addrc(addr);
         mcode += opcb.to_string<char, std::string::traits_type, std::string::allocator_type>();
         mcode += addrc.to_string<char, std::string::traits_type, std::string::allocator_type>();
+        cout<<"j mccode:" << mcode <<endl;
     }
     else
         ErrorMsg.assign("Error: Undefined Label used!\n");
@@ -859,67 +769,10 @@ static int calculateExp(string exp)
     }
 }
 
-//transform string to 8 digits hex number
-string StrToHex(const string str)
-{
-    string tmp = str;
-    if (tmp.length() > 32)
-        tmp = str.substr(0, 32);
-    char res[9];
-    string ret = "";
-    memset(res, '0', 9);
-    for (int i = 7; i >= (7 - (ceil(tmp.length() / 4.0) - 1)); --i)
-    {
-        unsigned int hexword;
-        if (i == 7)
-            hexword = strtoul(tmp.substr(i * 4, tmp.length() - i * 4).c_str(), NULL, 2);
-        else
-            hexword = strtoul(tmp.substr(i * 4, 4).c_str(), NULL, 2);
-        //cout << "tmphex: " << tmp.substr(i * 4, 4) << "*number:"<< hexword << endl;
-        switch (hexword)
-        {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-        case 9:
-            res[i] = hexword + '0' - 0;
-            break;
-        case 10:
-            res[i] = 'A';
-            break;
-        case 11:
-            res[i] = 'B';
-            break;
-        case 12:
-            res[i] = 'C';
-            break;
-        case 13:
-            res[i] = 'D';
-            break;
-        case 14:
-            res[i] = 'E';
-            break;
-        case 15:
-            res[i] = 'F';
-            break;
-        };
-    }
-    for (int i = 0; i <= 7; i++)
-    {
-        ret += res[i];
-    }
-    return ret;
-}
-
 //ui汇编接口函数
 bool assembler(string filename, string content, int choice, string &result, int FileType)
 {
+    ErrorMsg = "No Error.\n";
     rgs = initRegTbls();
     ms = initMnemonicTbls();
     MCSet* mcSet = new MCSet();

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "assembler.h"
 #include "highlight.h"
+#include "disassembler.h"
 #include <QMessageBox>
 #include <QPushButton>
 #include <QFileDialog>
@@ -329,11 +330,26 @@ void MainWindow::buildAssembler(int outType,int choice)
         status = assembler(fileName,"",0,result,outType);
         }
     else
-    {//bool assembler(string filename, string content, int choice, string &result, int FileType)
+    {
         content = ui->rawInput->toPlainText().toStdString();
-        cout<<content<<endl;
+        //cout<<content<<endl;
         status = assembler("",content,1,result,outType);
     }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    ui->processedOut->setReadOnly(false);
+    ui->processedOut->clear();
+    ui->processedOut->setPlainText(QString(result.c_str()));
+    QApplication::restoreOverrideCursor();
+    ui->processedOut->setReadOnly(true);
+}
+
+void MainWindow::buildDisAssembler()
+{
+    string content;
+    string result;
+    content = ui->rawInput->toPlainText().toStdString();
+    cout<<content<<endl;
+    result = disassembler(content);
     QApplication::setOverrideCursor(Qt::WaitCursor);
     ui->processedOut->setReadOnly(false);
     ui->processedOut->clear();
@@ -378,4 +394,9 @@ void MainWindow::on_actionHex_triggered()
 void MainWindow::on_actionSaveMachineCode_triggered()
 {
     saveProcessedFile();
+}
+
+void MainWindow::on_actiondisasm_triggered()
+{
+    buildDisAssembler();
 }

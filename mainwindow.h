@@ -28,6 +28,7 @@ public:
     std::string getcurFileName();
     bool saveProcessedFile();
     void buildAssembler(int outType,int choice);
+    void buildDisAssembler();
 protected:
     void closeEvent(QCloseEvent *event);
 private slots://定义按钮动作函数
@@ -73,6 +74,8 @@ private slots://定义按钮动作函数
     void on_actionHex_triggered();
 
     void on_actionSaveMachineCode_triggered();
+
+    void on_actiondisasm_triggered();
 
 private:
     Ui::MainWindow *ui;

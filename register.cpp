@@ -7,6 +7,8 @@ Regs initRegTbls()
     createRegCoWordTbl(Rs);
     createRegNumTbl(Rs);
     createRegWordTbl(Rs);
+    createDRegWordTbl(Rs);
+    createDRegCoWordTbl(Rs);
     return *Rs;
 }
 
@@ -29,6 +31,20 @@ static void createRegNumTbl(Regs* Rs)
     int i;
     for (i = 0; i < CPURNUM; i++) {
         (*Rs)->regNumTbl.insert(pair<string, int>((*Rs)->regNumName[i], (*Rs)->regNum[i]));
+    }
+}
+
+static void createDRegWordTbl(Regs* Rs){
+    int i;
+    for (i = 0; i < CPURNUM; i++) {
+        (*Rs)->dRegWordTbl.insert(pair<int, string>((*Rs)->regNum[i], (*Rs)->regWordName[i]));
+    }
+}
+
+static void createDRegCoWordTbl(Regs* Rs){
+    int i;
+    for (i = 0; i < COPRORNUM; i++) {
+        (*Rs)->dRegCoWordTbl.insert(pair<int, string>((*Rs)->regNumCo[i], (*Rs)->coprocessor[i]));
     }
 }
 

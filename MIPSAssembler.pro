@@ -29,14 +29,18 @@ SOURCES += \
     mnemonic.cpp \
     register.cpp \
     assembler.cpp \
-    hightlight.cpp
+    hightlight.cpp \
+    disassembler.cpp \
+    filehandler.cpp
 
 HEADERS += \
         mainwindow.h \
     assembler.h \
     mnemonic.h \
     register.h \
-    highlight.h
+    highlight.h \
+    disassembler.h \
+    filehandler.h
 
 FORMS += \
         mainwindow.ui
