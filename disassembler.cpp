@@ -184,7 +184,7 @@ static string ImcTranslate(string code, string mnemonic, int lineNum){
     uimme_ofs = strtoul(code.substr(16,16).c_str(),NULL,2);
     rs = dRegs->dRegWordTbl[rsnum];
     rt = dRegs->dRegWordTbl[rtnum];
-    cout << "R: " << "rs: " << rs << "rt: " <<rt << "imme_ofs: " << imme_ofs << "uimme_ofs: "<< uimme_ofs << endl;
+    cout << "I: " << "rs: " << rs << "rt: " <<rt << "imme_ofs: " << imme_ofs << "uimme_ofs: "<< uimme_ofs << endl;
     asmcode = "";
     int mnecode = dms->mne2codeTbl[mnemonic];
     /*
@@ -237,6 +237,7 @@ static string ImcTranslate(string code, string mnemonic, int lineNum){
     case 47: //case "bne":
         s_imme_ofs = dex2str(imme_ofs);
         absAddr = ORIGIN + ((lineNum+1) + imme_ofs)*2;
+        /*
         if(revLabelSet.count(absAddr) == 0){
             Label = "L" + dex2str(LabelSet.size());
             LabelSet.insert(pair<string, unsigned int>(Label,absAddr));
@@ -245,10 +246,13 @@ static string ImcTranslate(string code, string mnemonic, int lineNum){
         }
         else
             asmcode = mnemonic + " " + rs + ", " + rt + ", " + revLabelSet[absAddr];
+            */
+        asmcode = mnemonic + " " + rs + ", " + rt + ", " + s_imme_ofs;
         break;
         //mne rs,ofs
     case 48: //case "bgezal":
         s_imme_ofs = dex2str(imme_ofs);
+        /*
         absAddr = ORIGIN + ((lineNum+1) + imme_ofs)*2;
         if(revLabelSet.count(absAddr) == 0){
             Label = "L" + dex2str(LabelSet.size());
@@ -257,6 +261,8 @@ static string ImcTranslate(string code, string mnemonic, int lineNum){
             asmcode = mnemonic + " " + rs + ", " + Label;
         }
         asmcode = mnemonic + " " + rs + ", " + revLabelSet[absAddr];
+        */
+        asmcode = mnemonic + " " + rs + ", " + s_imme_ofs;
         break;
     default:
         break;
@@ -270,8 +276,9 @@ static string JmcTranslate(string code, string mnemonic ,int lineNum){
     bitset<32> bPCplus4(PCplus4);
     string asmcode = "";
     string sPCplus4 = bPCplus4.to_string();
-    string sAbsAddr = sPCplus4.substr(0,4) + code.substr(6,26) + "0";
+    string sAbsAddr = sPCplus4.substr(0,5) + code.substr(6,26) + "0";
     absAddr = strtoul(sAbsAddr.c_str(),NULL,2);
+    /*
     if(revLabelSet.count(absAddr) == 0){
         string Label = "L" + dex2str(LabelSet.size());
         LabelSet.insert(pair<string, unsigned int>(Label,absAddr));
@@ -280,6 +287,8 @@ static string JmcTranslate(string code, string mnemonic ,int lineNum){
     }
     else
         asmcode = mnemonic + " " +revLabelSet[absAddr];
+        */
+    asmcode = mnemonic + " " + absAddr;
     return asmcode;
 }
 
@@ -292,18 +301,23 @@ string disassembler(string machinecode){
     getRidOfNotes(mc);
     vector<string> tmpmcv = splitC(mc,'\n');
     //取不为空的机器码
-    map<unsigned int, string> mcv;
+    map<unsigned int, string> mcv; //保存地址对应的汇编代码
+    map<unsigned int, string> omcv;//保存原机器码
     string res = "";
     int lineNum = 0;
     for(int i = 0; i < tmpmcv.size(); i++){
         if(tmpmcv[i] != "")
         {
             string asmcode = parseStatement(tmpmcv[i],lineNum);
-            mcv.insert(pair<unsigned int, string>(ORIGIN+lineNum*2,asmcode));
+            string hexcode = StrToHex(tmpmcv[i]);
+            unsigned int addr = ORIGIN+lineNum*2;
+            mcv.insert(pair<unsigned int, string>(addr,asmcode));
+            omcv.insert(pair<unsigned int, string>(addr,hexcode));
             lineNum++;
         }
     }
     cout<< "return main" <<endl;
+    /*
     map<unsigned int, string>::iterator iter;
     iter = revLabelSet.begin();
     while (iter!=revLabelSet.end()) {
@@ -311,10 +325,18 @@ string disassembler(string machinecode){
         mcv[iter->first] = iter->second + ": " + mcv[iter->first];
         iter++;
     }
+    */
     map<unsigned int, string>::iterator iter2 = mcv.begin();
     while(iter2!=mcv.end()){
         cout<<"mcv - addr: " << iter2->first <<endl;
-        res += iter2->second +'\n';
+        string addrs = udex2str(iter->first);
+        int dis = 4-addrs.length();
+        //补0
+        while(dis){
+            addrs = " " + addrs;
+            dis--;
+        }
+        res += addrs + "[" + omcv[iter->first] + "]" + iter2->second +'\n';
         iter2++;
     }
     cout<<"return to widget: " << res <<endl;

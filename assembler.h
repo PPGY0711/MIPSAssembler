@@ -64,7 +64,7 @@ string printMachineCode(MCSet* mcSet,int FileType);
 string printMachineCode();
 //调用Assembler的外部接口
 ACRec* assembler(string content, string &result, int FileType);
-void assembler(string program, unsigned short MemoryMap[], map<string, string> &macros);
+void assembler(string program, unsigned short MemoryMap[], map<string, string> &macros,unsigned int &ds,unsigned int &cs, unsigned int &ce);
 //UI调用Assembler的外部接口
 bool assembler(string filename, string content, int choice, string &result, int FileType);
 #endif // !_TXTFORMAT_H_

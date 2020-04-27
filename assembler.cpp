@@ -319,6 +319,7 @@ void genMachineCode(ACRec* asmC, MCSet* mcSet)
                     ErrorMsg.assign("Error: Undefined mnemonic used!\n");
                 (*mcSet)->MCodeTbl.insert(pair<int, string>(iter->first, machineCode));
             }
+            (*asmC)->endAddr = lineaddr;
             insertMCodeToMemory(lineaddr,machineCode);
         }
         iter++;
@@ -691,11 +692,11 @@ static string JtTranslate(string code, int linenum, MCSet* mcSet, ACRec* asmC)
 }
 
 //格式指令处理
+/*
+string insName[FINSNUM] = { "equ",".origin",".data",".text",".end",
+    ".space",".zjie",".2zjie",".word" };
+*/
 static int isFormatCode(string s){
-    /*
-    string insName[FINSNUM] = { "equ",".origin",".data",".text",".end",
-        ".space",".zjie",".2zjie",".word" };
-    */
     //equ 定义常量表
     s.erase(s.find_last_not_of(' ') + 1, string::npos);    //去掉字符串末尾空格
     s.erase(0, s.find_first_not_of(' '));    //去掉字符串首空格
@@ -1124,7 +1125,7 @@ ACRec* assembler(string content, string &result, int FileType)
     }
 }
 
-void assembler(string program, unsigned short MemoryMap[], map<string, string> &macros,unsigned int &ds,unsigned int &cs){
+void assembler(string program, unsigned short MemoryMap[], map<string, string> &macros,unsigned int &ds,unsigned int &cs, unsigned int &ce){
     string res;
     ACRec* asmC;
     memset(MMap,0,sizeof(unsigned short)*(0x3000));
@@ -1138,6 +1139,7 @@ void assembler(string program, unsigned short MemoryMap[], map<string, string> &
         }
         ds = (*asmC)->dataStart;
         cs = (*asmC)->textStart;
+        ce = (*asmC)->endAddr;
     }
 }
 

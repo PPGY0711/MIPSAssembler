@@ -28,9 +28,9 @@ struct Registers
     //待完善的协处理器部分
     string coprocessor[COPRORNUM] = { "STATUS","CAUSE","EPC" };
     //寄存器内容
-    unsigned int regContent[32] = {0};
-    unsigned int regCoContent[32] = {0};
-
+    unsigned int regContent[CPURNUM] = {0};
+    unsigned int regCoContent[COPRORNUM] = {0};
+    unsigned int Hi,Lo;//用于长乘法和除法
     int regNum[CPURNUM] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
                         20,21,22,23,24,25,26,27,28,29,30,31 };
     int regNumCo[COPRORNUM] = { 12,13,14 };

@@ -1,64 +1,42 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "assembler.h"
 #include "highlight.h"
-#include "disassembler.h"
-#include <QMessageBox>
 #include <QPushButton>
-#include <QFileDialog>
-#include <QTextStream>
 #include <QTextEdit>
-#include <QLineEdit>
-#include <QDialog>
-#include <QVBoxLayout>
+#include <QTextBrowser>
+#include <QFormLayout>
 #include <QTextCursor>
-#include <iostream>
+#include <QTabWidget>
+#include <QTableWidget>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->rawInput->setVisible(false);
-    ui->processedOut->setVisible(false);
-
-    ui->rawInput->setFont(QFont(tr("Consolas"),10));
-    ui->processedOut->setFont(QFont(tr("Consolas"),10));
-    Highlight *inputhighlight = new Highlight(ui->rawInput->document());
-    Highlight *outputhighlight = new Highlight(ui->processedOut->document());
-
-    setWindowTitle("MIPS assembler #3160104633@zju.edu.cn");
-    isUntitled = true;
-    curFile = tr("Untitled.asm");
-    ui->actionBin->setDisabled(true);
-    ui->actionHex->setDisabled(true);
-
-    //for search
-    findDlg = new QDialog(this);
-    findDlg->setWindowTitle(tr("Search"));
-    findLineEdit = new QLineEdit(findDlg);
-    QPushButton *lastbtn = new QPushButton(tr("Search for Last"),findDlg);
-    QPushButton *nextbtn = new QPushButton(tr("Search for Next"),findDlg);
-    QVBoxLayout *flayout = new QVBoxLayout(findDlg);
-    flayout->addWidget(findLineEdit);
-    flayout->addWidget(lastbtn);
-    flayout->addWidget(nextbtn);
-    connect(lastbtn,&QPushButton::clicked,this,&MainWindow::showFindLastText);
-    connect(nextbtn,&QPushButton::clicked,this,&MainWindow::showFindNextText);
-
-    //for replace
-    replaceDlg = new QDialog(this);
-    replaceDlg->setWindowTitle(tr("Replace"));
-    replaceLineEdit = new QLineEdit(replaceDlg);
-    replaceWord = new QLineEdit(replaceDlg);
-    QPushButton *singlebtn = new QPushButton(tr("Replace"),replaceDlg);
-    QPushButton *allbtn = new QPushButton(tr("Replace All"),replaceDlg);
-    QVBoxLayout *rlayout = new QVBoxLayout(replaceDlg);
-    rlayout->addWidget(replaceLineEdit);
-    rlayout->addWidget(replaceWord);
-    rlayout->addWidget(singlebtn);
-    rlayout->addWidget(allbtn);
-    connect(singlebtn,&QPushButton::clicked,this,&MainWindow::replaceSingleText);
-    connect(allbtn,&QPushButton::clicked,this,&MainWindow::replaceAllText);
+    setWindowTitle("MIPS Simulator @3160104633@zju.edu.cn");
+    ui->ExecuteBtn->setDisabled(true);
+    ui->DebugBtn->setDisabled(true);
+    ui->ControlPanel->setReadOnly(true);
+    ui->MemoryWindow->setReadOnly(true);
+    ui->ProgramWindow->setReadOnly(true);
+    ui->RegisterFile->setEditTriggers(QAbstractItemView.NoEditTriggers);
+    ui->RegisterFile = QTableWidget(8,4);
+    ui->RegisterFile->setHorizontalHeaderLabels({'0','1','2','3'});
+    //启动模拟器
+    reBootComputer();
+    //初始化界面
+    ui->PCWindow->setFont(QFont(tr("宋体"),12));
+    ui->PCWindow->setText(this->mainWindowStr);
+    ui->ControlPanel->setFont(QFont(tr("Consolas"),12));
+    ui->ControlPanel->setText(this->ControlPanelStr);
+    ui->MemoryWindow->setFont(QFont(tr("Consolas"),12));
+    ui->MemoryWindow->setText(this->MemoryStr);
+    ui->ProgramWindow->setFont(QFont(tr("Consolas"),12));
+    ui->ProgramWindow->setText(this->CodeStr);
+    Highlight *inputAsmHighLight = new Highlight(ui->MIPSAsmInput->document());
+    ui->MIPSAsmInput->clear();
+    ui->MachineCodeInput->clear();
 
 }
 
@@ -67,336 +45,138 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::newFile()
-{
-    if(maybeSave())
-    {
-        isUntitled = true;
-        curFile = tr("Untitled.asm");
-        setWindowTitle(curFile);
-        ui->rawInput->clear();
-        ui->processedOut->clear();
-        ui->rawInput->setVisible(true);
-        ui->processedOut->setVisible(true);
-        ui->processedOut->setReadOnly(true);
-        ui->actionBin->setDisabled(false);
-        ui->actionHex->setDisabled(false);
-    }
+void MainWindow::reBootComputer(){
+    this->mpc = buildComputer();
+    showMemory();
+    showProgram();
+    showHelloWorld();
+    showCtrlPanel();
 }
 
-bool MainWindow::maybeSave()
-{
-    if(ui->rawInput->document()->isModified())
-    {
-        QMessageBox warning;
-        warning.setWindowTitle(tr("Warning"));
-        warning.setIcon(QMessageBox::Warning);
-        warning.setText(curFile + tr(" hasn't been saved yet. Save it or not?"));
-        QPushButton *yesBtn = warning.addButton(tr("Yes(&Y)"),QMessageBox::YesRole);
-        warning.addButton(tr("No(&N)"),QMessageBox::NoRole);
-        QPushButton *cancelBtn = warning.addButton(tr("Cancel"),QMessageBox::RejectRole);
-        warning.exec();
-        if(warning.clickedButton() == yesBtn)
-            return save();
-        else if(warning.clickedButton() == cancelBtn)
-            return false;
-    }
-    return true;
-}
-
-bool MainWindow::save()
-{
-    if(isUntitled)
-    {
-        return saveAs();
-    }
-    else
-    {
-        return saveFile(curFile);
-    }
-}
-
-bool MainWindow::saveAs()
-{
-    QString fileName = QFileDialog::getSaveFileName(this,tr("Save as"),curFile);
-    if(fileName.isEmpty())
-        return false;
-    return saveFile(fileName);
-}
-
-bool MainWindow::saveFile(const QString &fileName)
-{
-    QFile file(fileName);
-    if(!file.open(QFile::WriteOnly|QFile::Text))
-    {
-        QMessageBox::warning(this,tr("MIPS Assembler & Disassembler"),
-                             tr("cannot write to file %1:\n %2")
-                             .arg(fileName).arg(file.errorString()));
-        return false;
-    }
-    QTextStream out(&file);
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    out<<ui->rawInput->toPlainText();
-    QApplication::restoreOverrideCursor();
-    isUntitled = false;
-    curFile = QFileInfo(fileName).canonicalFilePath();
-    setWindowTitle("MIPS assembler & disassembler #3160104633@zju.edu.cn");
-    return true;
-}
-
-void MainWindow::on_actionNewFile_N_triggered()
-{
-    newFile();
-}
-
-void MainWindow::on_actionSave_S_triggered()
-{
-    save();
-}
-
-void MainWindow::on_actionSave_As_A_triggered()
-{
-    saveAs();
-}
-
-bool MainWindow::loadFile(const QString &fileName)
-{
-    QFile file(fileName);
-    if(!file.open(QFile::ReadOnly|QFile::Text))
-    {
-        QMessageBox::warning(this,tr("MIPS Assembler"),
-                             tr("cannot read file %1:\n %2")
-                             .arg(fileName).arg(file.errorString()));
-        return false;
-    }
-    //func;
-    QTextStream in(&file);
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    ui->rawInput->setPlainText(in.readAll());
-    QApplication::restoreOverrideCursor();
-
-    curFile = QFileInfo(fileName).canonicalFilePath();
-    setWindowTitle(curFile);
-    ui->actionBin->setDisabled(false);
-    ui->actionHex->setDisabled(false);
-    return true;
-}
-
-void MainWindow::on_actionOpenFile_O_triggered()
-{
-    if(maybeSave())
-    {
-        QString fileName = QFileDialog::getOpenFileName(this,tr("Open File"),"",tr("ASM(*.asm *.txt);;Text Files(*.bin *.coe)"));
-        if(!fileName.isEmpty())
-        {
-            loadFile(fileName);
-            ui->rawInput->setVisible(true);
-            ui->processedOut->setVisible(true);
-            ui->processedOut->setReadOnly(true);
+void MainWindow::showMemory(){
+    this->MemoryStr = "";
+    for(int i = 0; i < MEMORYSIZE; i++){
+        char tmpCell[9];
+        sprintf(tmpCell,"%08x",this->mpc.MemoryMap[i]);
+        string tmpCellStr(tmpCell);
+        MemoryStr = MemoryStr + tmpCellStr.substr(4,4) + " ";
+        if((i+1)%8==0 && (i+1)%16 != 0){
+            MemoryStr += "- ";
+        }
+        if((i+1)%8==0 && (i+1)%16 == 0){
+            MemoryStr += "\n";
         }
     }
 }
 
-void MainWindow::on_actionClose_C_triggered()
-{
-    if(maybeSave())
-    {
-        ui->rawInput->setVisible(false);
-        ui->processedOut->setVisible(false);
-        ui->actionBin->setDisabled(true);
-        ui->actionHex->setDisabled(true);
+void MainWindow::showProgram(){
+    //把目前内存（不包括显存）中的数据以汇编指令的形式显示
+    this->CodeStr = "";
+    for(int i = 0; i < MEMORYSIZE-DISPLAYVOLMUE; i+=2){
+        unsigned int mcode = 0;
+        mcode |= mpc.MemoryMap[i];
+        mcode <<= 16;
+        mcode |= mpc.MemoryMap[i+1];
+        bitset<32> mcodebit(mcode);
+        this->CodeStr += mcodebit.to_string<char, std::string::traits_type, std::string::allocator_type>()+"\n";
+    }
+    this->CodeStr = disassembler(this->CodeStr);
+    vector<string> codelines = splitC(this->CodeStr,'\n');
+    this->codeTbl.clear();
+    for(int i = 0; i< codelines.size();i++){
+        unsigned int cpc = strtoul(trim(codelines[i].substr(0,codelines[i].find('['))),NULL,10);
+        string ccode = codelines[i].substr(codelines[i].find('[')+1,codelines[i].find(']')-codelines[i].find('[')-1);
+        this->codeTbl.insert(pair<unsigned int, string>(cpc,ccode));
     }
 }
 
-void MainWindow::on_actionUndo_U_triggered()
-{
-    ui->rawInput->undo();
-}
-
-void MainWindow::on_actionCut_T_triggered()
-{
-    ui->rawInput->cut();
-}
-
-void MainWindow::on_actionCopy_C_triggered()
-{
-    ui->rawInput->copy();
-}
-
-void MainWindow::on_actionPaste_P_triggered()
-{
-    ui->rawInput->paste();
-}
-
-void MainWindow::closeEvent(QCloseEvent *event)
-{
-    if(maybeSave())
-    {
-        event->accept();
-    }
-    else
-    {
-        event->ignore();
-    }
-}
-
-void MainWindow::on_actionExit_X_triggered()
-{
-    on_actionClose_C_triggered();
-    qApp->quit();
-}
-
-void MainWindow::showFindLastText()
-{
-    QString str = findLineEdit->text();
-    if(!ui->rawInput->find(str,QTextDocument::FindBackward))
-    {
-        QMessageBox::warning(this,tr("Search"),tr("Cannot find %1 in this file.").arg(str));
-    }
-}
-
-void MainWindow::showFindNextText()
-{
-    QString str = findLineEdit->text();
-    if(!ui->rawInput->find(str))
-    {
-        QMessageBox::warning(this,tr("Search"),tr("Cannot find %1 in this file.").arg(str));
-    }
-}
-
-void MainWindow::on_actionFind_F_triggered()
-{
-    findDlg->show();
-}
-
-
-void MainWindow::on_actionDelete_L_triggered()
-{
-    ui->rawInput->textCursor().removeSelectedText();
-}
-
-void MainWindow::replaceSingleText()
-{
-    QTextCursor tmpCursor = ui->rawInput->textCursor();
-    QString str = replaceLineEdit->text();
-    QString rstr = replaceWord->text();
-
-    if(!ui->rawInput->find(str,QTextDocument::FindBackward))
-    {
-        QMessageBox::warning(this,tr("Warning"),tr("Cannot find target string."));
-    }
-    else
-    {
-        ui->rawInput->textCursor().removeSelectedText();
-        ui->rawInput->textCursor().insertText(rstr);
-        //QMessageBox::warning(this,tr("Replace Single"),tr("Replace completed."));
-    }
-}
-
-void MainWindow::replaceAllText()
-{
-    QString str = replaceLineEdit->text();
-    QString rstr = replaceWord->text();
-    QString passage = ui->rawInput->toPlainText();
-    passage.replace(QString(str),QString(rstr));
-    ui->rawInput->clear();
-    ui->rawInput->setPlainText(passage);
-    QMessageBox::warning(this,tr("Replace All"),tr("Replace completed."));
-}
-
-void MainWindow::on_actionReplace_R_triggered()
-{
-    replaceDlg->show();
-}
-
-
-void MainWindow::on_actionSelectAll_A_triggered()
-{
-    ui->rawInput->selectAll();
-}
-
-std::string MainWindow::getcurFileName()
-{
-    return curFile.toStdString();
-}
-
-void MainWindow::buildAssembler(int outType,int choice)
-{
-    string fileName,content;
-    string result;
-    bool status;
-    if(!ui->rawInput->document()->isModified()){
-        fileName = getcurFileName();
-        status = assembler(fileName,"",0,result,outType);
+void MainWindow::showHelloWorld(){
+    //读取显存中的数据形成字符串
+    this->mainWindowStr = "";
+    for(int i = MEMORYSIZE-DISPLAYVOLMUE; i < MEMORYSIZE; i++){
+        char cs[3];
+        cs[0] = mpc.MemoryMap[i] >> 8;
+        cs[1] = mpc.MemoryMap[i] & 0xFF;
+        cs[2] = '\0';
+        if(cs[1] != '\0'){
+            if((cs[0] & 0x80) == 0){
+                string scell(cs+1);
+                this->mainWindowStr += scell;
+            }
+            else{
+                string scell(cs);
+                this->mainWindowStr += scell;
+            }
         }
-    else
-    {
-        content = ui->rawInput->toPlainText().toStdString();
-        //cout<<content<<endl;
-        status = assembler("",content,1,result,outType);
+        else
+            break;
     }
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    ui->processedOut->setReadOnly(false);
-    ui->processedOut->clear();
-    ui->processedOut->setPlainText(QString(result.c_str()));
-    QApplication::restoreOverrideCursor();
-    ui->processedOut->setReadOnly(true);
 }
 
-void MainWindow::buildDisAssembler()
-{
-    string content;
-    string result;
-    content = ui->rawInput->toPlainText().toStdString();
-    cout<<content<<endl;
-    result = disassembler(content);
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    ui->processedOut->setReadOnly(false);
-    ui->processedOut->clear();
-    ui->processedOut->setPlainText(QString(result.c_str()));
-    QApplication::restoreOverrideCursor();
-    ui->processedOut->setReadOnly(true);
+void MainWindow::showCtrlPanel(){
+    unsigned int codeinMem = 0;
+    codeinMem |= this->mpc.MemoryMap[this->mpc.PC];
+    codeinMem <<= 16;
+    codeinMem |= this->mpc.MemoryMap[this->mpc.PC+1];
+    unsigned int opc = mcode >> 26;
+    unsigned int func = mcode & 0x0000003F;
+    unsigned int rsnum = (mcode & 0x03E00000) >> 21;
+    unsigned int rtnum = (mcode & 0x001F0000) >> 16;
+    unsigned int rdnum = (mcode & 0x0000F800) >> 11;
+    unsigned int sanum = (mcode & 0x000007C0) >> 6;
+    unsigned int adr = (this->mpc.PC & 0xF8000000) + ((codeinMem & 0x03FFFFFF) << 1);
+    int imme = (mcode&0xFFFF) << 16;
+    imme >>= 16;
+    this->ControlPanelStr = "";
+    char buf[40];
+    string cell;
+    memset(buf,0,sizeof(char)*40);
+    //instr
+    sprintf(buf,"[instr]: %s\n",this->codeTbl[this->mpc.PC]);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //op
+    sprintf(buf,"[op   ]: %d\n",opc);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //rs
+    sprintf(buf,"[%5s]: %d\n",this->mpc.rgs->dRegWordTbl[rsnum],this->mpc.rgs->regContent[rsnum]);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //rt
+    sprintf(buf,"[%5s]: %d\n",this->mpc.rgs->dRegWordTbl[rtnum],this->mpc.rgs->regContent[rtnum]);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //rd
+    sprintf(buf,"[%5s]: %d\n",this->mpc.rgs->dRegWordTbl[rdnum],this->mpc.rgs->regContent[rdnum]);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //shmt
+    sprintf(buf,"[shmt ]: %d\n",sanum);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //data
+    sprintf(buf,"[data ]: [    %04x]%d\n",imme,imme);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //addr
+    sprintf(buf,"[addr ]: [ %07x]%u\n",adr,adr);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
+    //memory
+    sprintf(buf,"[Memry]: [%08x]%u\n",codeinMem,codeinMem);
+    cell = new string(buf);
+    this->ControlPanelStr += cell;
+    memset(buf,0,sizeof(char)*40);
 }
 
-bool MainWindow::saveProcessedFile()
-{
-    QString defaultName;
-    QString fileName;
-    defaultName = "Untitled.bin";
-    fileName = QFileDialog::getSaveFileName(this,tr("Save as .bin"),defaultName,tr("BIN Files (*.bin)"));
-
-    QFile file(fileName);
-    if(!file.open(QFile::WriteOnly|QFile::Text))
-    {
-        QMessageBox::warning(this,tr("MIPS Assembler"),
-                             tr("cannot write to file %1:\n %2")
-                             .arg(fileName).arg(file.errorString()));
-        return false;
-    }
-    QTextStream out(&file);
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    out<<ui->processedOut->toPlainText();
-    QApplication::restoreOverrideCursor();
-    return true;
-}
-
-
-void MainWindow::on_actionBin_triggered()
-{
-    buildAssembler(0,0);
-}
-
-void MainWindow::on_actionHex_triggered()
-{
-    buildAssembler(1,0);
-}
-
-void MainWindow::on_actionSaveMachineCode_triggered()
-{
-    saveProcessedFile();
-}
-
-void MainWindow::on_actiondisasm_triggered()
-{
-    buildDisAssembler();
-}
+void MainWindow::ExecuteProgram(string program, int choice);
+void MainWindow::DebugProgram(string program, int choice);
