@@ -60,7 +60,7 @@ void Highlight::setmnemonicFormat()
                       "push"<<"pop"<<"move"<<"shi"<<"shix"<<"j"<<"jal"<<
                       "inc"<<"dec"<<"addu"<<"addiu"<<"subu"<<"not"<<"neg"<<
                       "abs"<<"swap"<<"b"<<"beqz"<<"bnez"<<"beqi"<<"bnei"<<
-                      "blt"<<"ble"<<"bgt"<<"bge"<<"seq"<<"sne";
+                      "blt"<<"ble"<<"bgt"<<"bge"<<"seq"<<"sne"<<"li"<<"la";
 
     KhighlightRules.append(krule);
 }

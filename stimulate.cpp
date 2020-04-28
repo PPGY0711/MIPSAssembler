@@ -1,28 +1,14 @@
 #include "stimulate.h"
-#include "filehandler.h"
-
+#include <QString>
+#define LOOPTIMEMAX 2147483648
+#define LOOPTIMEMIN 1
 //中断处理函数
-//1
-void* print_int(Mipsc &mpc, void* a0, void* a1, void* a2){
-    int* iptr = (int*)a0;
-    printf("%d\n",(*iptr));
-    mpc.MemoryMap[mpc.dPC] = (*iptr) >> 16;
-    mpc.MemoryMap[mpc.dPC+1] = (*iptr) & 0x0000FFFF;
-    mpc.dPC += 2;
-    return NULL;
-}
-//5
-void* read_int(Mipsc &mpc, void* a0, void* a1, void* a2){
-    int i;
-    scanf("%d",&i);
-    return (void*)&i;
-}
 //11
 void* print_char(Mipsc &mpc, void* a0, void* a1, void* a2){
     unsigned int *cptr = (unsigned int*)a0;
     unsigned short s = (*cptr) & 0xFFFF;
     char cs[3];
-    if(s&x8000){
+    if(s&0x8000){
         cs[0] = s >> 8;
         cs[1] = s&0xFF;
         cs[2] = '\0';
@@ -38,38 +24,6 @@ void* print_char(Mipsc &mpc, void* a0, void* a1, void* a2){
     return NULL;
 }
 
-//12
-void* read_char(Mipsc &mpc, void* a0, void* a1, void* a2){
-    string s;
-    char ss[3];
-    scanf("%s",s);
-    if(s.length() == 2){
-        ss[0] = s[0];
-        ss[1] = s[1];
-        ss[2] = '\0';
-    }
-    else if(s.length() == 1){
-        ss[0] = s[0];
-        ss[1] = '\0';
-    }
-    else{
-        if(s[0] & 0x80 == 0)
-        {
-            ss[0] = s[0];
-            ss[1] = '\0';
-            s.erase(1,s.end());
-        }
-        else{
-            ss[0] = s[0];
-            ss[1] = s[1];
-            ss[2] = '\0';
-            s.erase(2,s.end());
-        }
-    }
-    printf("%s\n",ss);
-    return (void*)s;
-}
-
 Mipsc buildComputer(){
     MipscPtr Pmpc = new Mipsc();
     Pmpc->dPC = MEMORYSIZE - DISPLAYVOLMUE;
@@ -77,18 +31,33 @@ Mipsc buildComputer(){
     Pmpc->rgs = initRegTbls();
     Pmpc->ms = initMnemonicTbls();
     Pmpc->rgs->Hi = Pmpc->rgs->Lo = 0;
+    Pmpc->isDebugBegin = 0;
+    Pmpc->lastPC = 0;
+    Pmpc->intRequest = 0;
+    Pmpc->intRetValuePtr = NULL;
+    Pmpc->intTriggled = 0;
     memset(Pmpc->MemoryMap,0,sizeof(unsigned short)*(MEMORYSIZE+STACKSIZE));
-    memset(Pmpc->rgs->regContent,0,sizeof(unsigned int)*(CPURNUM));
-    memset(Pmpc->rgs->regCoContent,0,sizeof(unsigned int)*(COPRORNUM));
-    Pmpc->rgs->regContent[29] = Pmpc->rgs->regContent[30] = MEMORYSIZE+STACKSIZE + 1;//设置$sp,$fp
+    resetRegisterFile(Pmpc);
     setWelcomeStr((*Pmpc));
     return (*Pmpc);
 }
 
+void resetRegisterFile(MipscPtr Pmpc){
+    memset(Pmpc->rgs->regContent,0,sizeof(unsigned int)*(CPURNUM));
+    memset(Pmpc->rgs->regCoContent,0,sizeof(unsigned int)*(COPRORNUM));
+    Pmpc->rgs->regContent[29] = Pmpc->rgs->regContent[30] = MEMORYSIZE+STACKSIZE + 1;//设置$sp,$fp
+}
+
+void resetPC(MipscPtr Pmpc){
+    Pmpc->PC = Pmpc->cSegment;
+    Pmpc->lastPC = Pmpc->PC;
+}
+
 void mcbuildAssembler(MipscPtr Pmpc, string program){
     //实现把传入的汇编程序翻译成成机器码存入内存数组的map中（包括数据和代码）
-    assembler(program,Pmpc->MemoryMap,Pmpc->Macros,Pmpc->dSegment,Pmpc->cSegment);
+    assembler(program,Pmpc->MemoryMap,Pmpc->Macros,Pmpc->dSegment,Pmpc->cSegment,Pmpc->cEnd);
     Pmpc->PC = Pmpc->cSegment;//让PC指向代码段起点
+    Pmpc->lastPC = Pmpc->PC;
 }
 
 void mcbuildDisAssembler(MipscPtr Pmpc, string program){
@@ -105,33 +74,40 @@ void mcbuildDisAssembler(MipscPtr Pmpc, string program){
     }
 }
 
-static void emptyDisplayMemory(Mipsc &mpc){
-    for(i = MEMORYSIZE-DISPLAYVOLMUE; i < MEMORYSIZE;i++){
+void emptyDisplayMemory(Mipsc &mpc){
+    for(int i = MEMORYSIZE-DISPLAYVOLMUE; i < MEMORYSIZE;i++){
         mpc.MemoryMap[i] = 0;
     }
 }
 
 static void setWelcomeStr(Mipsc &mpc){
     emptyDisplayMemory(mpc);
-    string Welcome = "QT开发的MIPS模拟器！\n";
+    string tmpWelcome = " ----------MainWindow-------\n MIPS Simulator developed by PPGY0711!\n 在MIPS Assemble中键入MIPS汇编程序;\n 在MachineCode中键入机器码; \n 程序中打印的字符将会在此窗口显示!\n";
+    QString tmp = QString::fromUtf8(tmpWelcome.c_str());
+    string Welcome = tmp.toLocal8Bit().data();
+//    for(int i = 0; i< Welcome.length();i++){
+//        printf("char[%d]: %04x\n",i,Welcome[i]);
+//    }
     int j = 0;
     int i = MEMORYSIZE-DISPLAYVOLMUE;
     int isH = 0;
     //ASCii和汉字都存成16个bit，汉字为GBK编码
     while(j<Welcome.length()){
-        if(Welcome[j]&0x80 == 0){
+        if((Welcome[j]&0x80) == 0){
             mpc.MemoryMap[i] = Welcome[j];
+//            printf("Memory[%04x]:%04x\n",i,Welcome[j]);
             i++;
         }
         else{
             if(isH == 0){
-                mpc.MemoryMap[i] = Welcome[j];
+                mpc.MemoryMap[i] = Welcome[j] & 0xFF;
                 mpc.MemoryMap[i] <<= 8;
                 isH = 1;
             }
             else{
-                mpc.MemoryMap[i] |= Welcome[j];
+                mpc.MemoryMap[i] |= Welcome[j] & 0xFF;
                 isH = 0;
+//                printf("Memory[%04x]:%04x\n",i,Welcome[j]);
                 i++;
             }
         }
@@ -141,39 +117,52 @@ static void setWelcomeStr(Mipsc &mpc){
 }
 
 void ExecuteCode(Mipsc &mpc, string program, int strType){
+    emptyDisplayMemory(mpc);
     //strType == 0 执行汇编代码
     if(strType == 0){
-        mcbuildAssembler(mpc,program);
+        mcbuildAssembler(&mpc,program);
     }
     //strType == 1 执行二进制机器码
     else{
-        mcbuildDisAssembler(mpc,program);
+        mcbuildDisAssembler(&mpc,program);
     }
     //代码存入内存后，开始执行
-    _execCode(mpc);
+    _execCode(mpc, 0);
 }
 
 void DebugCode(Mipsc &mpc, string program,  int strType){
-    //strType == 0 执行汇编代码
-    if(strType == 0){
-        mcbuildAssembler(mpc,program);
-    }
-    //strType == 1 执行二进制机器码
-    else{
-        mcbuildDisAssembler(mpc,program);
+    if(mpc.isDebugBegin == 0){
+//        emptyDisplayMemory(mpc);
+        //strType == 0 执行汇编代码
+        if(strType == 0){
+            mcbuildAssembler(&mpc,program);
+        }
+        //strType == 1 执行二进制机器码
+        else{
+            mcbuildDisAssembler(&mpc,program);
+        }
+        mpc.isDebugBegin = 1;
     }
     //代码存入内存后，开始执行
-    _debugCode(mpc);
+    else
+        _execCode(mpc, 1);
 }
 
-static void _execCode(Mipsc &mpc){
+static void _execCode(Mipsc &mpc, int execmode){
+    //execmode 控制执行状态——0：执行；1：调试
     unsigned int mcode;
+    unsigned int originPC;
+    unsigned int looptime = 0;
+    unsigned int maxlooptime = execmode == 0? LOOPTIMEMAX:LOOPTIMEMIN;
 //    unsigned tmpPC = mpc.PC;
-    while(mpc.PC <= mpc.cEnd){
+    while(mpc.PC <= mpc.cEnd && looptime < maxlooptime){
+        originPC = mpc.PC;
+        mpc.lastPC = mpc.PC;
+        mpc.intTriggled = 0;
         mcode = mpc.MemoryMap[mpc.PC];
-        mpc.PC += 2;
         mcode = mcode << 16;
-        mcode = mcode + mpc.MemoryMap[i+1];
+        mcode = mcode + mpc.MemoryMap[mpc.PC+1];
+        mpc.PC += 2;
         //取操作码、函数值
         unsigned int mnemonic = mcode >> 26;
         unsigned int func = mcode & 0x0000003F;
@@ -209,7 +198,6 @@ static void _execCode(Mipsc &mpc){
         void* retvalue = NULL;
         switch (mnemonic) {
         case 0://R
-        case 28://mul
             switch(func){
             case 32://add
                 //有符号加，将寄存器内容解析成补码
@@ -288,24 +276,9 @@ static void _execCode(Mipsc &mpc){
                 //$v0 contains intRequest Num
                 INT_num = v0c;
                 retvalue = mpc.syscallFuncPtr[INT_num](mpc, (void*)&a0c,(void*)&a1c,(void*)&a2c);
-                switch(INT_num){
-                case 5://read_int
-                    mpc.rgs->regContent[mpc.rgs->regWordTbl["$v0"]] = (*(int*)retvalue);
-                    break;
-                case 12://read_char
-                    if((*(string)retvalue).length() == 2){
-                        mpc.rgs->regContent[mpc.rgs->regWordTbl["$a0"]] = (((unsigned int)(*(string)retvalue)[0]) << 8) \
-                                + ((unsigned int)(*(string)retvalue)[1] & 0xFF);
-                    }
-                    else
-                        mpc.rgs->regContent[mpc.rgs->regWordTbl["$a0"]] = (*(string)retvalue)[0];
-                    break;
-                }
-                break;
-            case 2://mul
-                //短乘法
-                rdc = rs*rt;
-                mpc.rgs->regContent[rdnum] = rdc;
+                mpc.intRequest = INT_num;
+                mpc.intRetValuePtr = retvalue;
+                mpc.intTriggled = 1;
                 break;
             case 24://mult
                 mulv = (long long)rsc*rtc;
@@ -360,6 +333,11 @@ static void _execCode(Mipsc &mpc){
             default:
                 break;
             }
+            break;
+        case 28://mul
+            //短乘法
+            rdc = rsc*rtc;
+            mpc.rgs->regContent[rdnum] = rdc;
             break;
         case 16://C
             switch(rsnum){
@@ -501,7 +479,10 @@ static void _execCode(Mipsc &mpc){
         default:
             break;
         }
+        looptime++;
+        if(mpc.PC == originPC)
+            break; //避免死循环
     }
+    if(mpc.PC > mpc.cEnd)
+        mpc.isDebugBegin = 0;
 }
-
-void _debugCode(Mipsc &mpc);

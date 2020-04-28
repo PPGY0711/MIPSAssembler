@@ -25,6 +25,7 @@ unsigned int ubinStr2dex(string ubs);
 int binStr2dex(string bs);
 string dex2str(int num);
 string udex2str(unsigned int num);
+string udex2binstr(unsigned int num);
 //判断某字符串代表的数是否在（-32768~32767）的范围内
 static long long getValue(string s);
 int isWithinLimit(string s);

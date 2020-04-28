@@ -196,7 +196,7 @@ static string repPseudoWithGeneral(string s)
         }
         break;
     }
-    newstr = label + ": " + newstr;
+//    newstr = label + ": " + newstr;
     return newstr;
 }
 
@@ -454,6 +454,8 @@ static string genRMcode(int opc, int rsnum, int rtnum, int rdnum, int sa, int fu
     str += rdc.to_string<char, std::string::traits_type, std::string::allocator_type>();
     str += sac.to_string<char, std::string::traits_type, std::string::allocator_type>();
     str += funcc.to_string<char, std::string::traits_type, std::string::allocator_type>();
+    cout<< "Rmcode: " << str << endl;
+
     return str;
 }
 
@@ -639,6 +641,7 @@ static string genIMcode(int opc, int rsnum, int rtnum, int simme, unsigned int u
     str += opcb.to_string<char, std::string::traits_type, std::string::allocator_type>();
     str += rsc.to_string<char, std::string::traits_type, std::string::allocator_type>();
     str += rtc.to_string<char, std::string::traits_type, std::string::allocator_type>();
+    cout<< "IMcode: " << str << endl;
     switch (choice)
     {
     case 1:
@@ -1115,6 +1118,7 @@ ACRec* assembler(string content, string &result, int FileType)
     string asmcode = content;
     firstScan(asmcode, asmC);
     genMachineCode(asmC, mcSet);
+    cout<<"ErrorMsg: " << ErrorMsg << endl;
     if (ErrorMsg == "No Error.\n"){
         result = printMachineCode(mcSet ,FileType);
         return asmC;
@@ -1128,6 +1132,8 @@ ACRec* assembler(string content, string &result, int FileType)
 void assembler(string program, unsigned short MemoryMap[], map<string, string> &macros,unsigned int &ds,unsigned int &cs, unsigned int &ce){
     string res;
     ACRec* asmC;
+    curOrigin = DEFAULTORIGIN;
+    PC = curOrigin;
     memset(MMap,0,sizeof(unsigned short)*(0x3000));
     if((asmC = assembler(program,res,0))!=NULL){
         for(int i = 0; i < 0x3000; i++){
