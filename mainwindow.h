@@ -17,15 +17,29 @@ public:
     void reBootComputer();
     void showMemory();
     void showProgram();
-    void showHelloWorld();
+    void showDisplay();
     void showCtrlPanel();
+    void setTableContent();
     void ExecuteProgram(string program, int choice);
     void DebugProgram(string program, int choice);
+
+private slots:
+    void on_ResetBtn_clicked();
+
+    void on_ExecuteBtn_clicked();
+
+    void on_ExecuteMachineCode_clicked();
+
+    void on_DebugBtn_clicked();
+
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     Mipsc mpc;
     string mainWindowStr,MemoryStr,ControlPanelStr,CodeStr;
     map<unsigned int, string> codeTbl;
+    int isDebugBtnDown;
 };
 
 #endif // MAINWINDOW_H

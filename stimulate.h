@@ -40,31 +40,36 @@ struct MIPSComputer{
     TotalMs ms;     //助记符
     map<string, string> Macros;//宏，用于记录汇编代码定义的符号常量，同equTbl
     //函数指针数组（模拟syscall）
-    void* (*syscallFuncPtr[13])(Mipsc &mpc, void* a0, void* a1, void* a2) = {
+    void* (*syscallFuncPtr[12])(Mipsc &mpc, void* a0, void* a1, void* a2) = {
         NULL,   //占位0
         print_int,      //1
         NULL,    //占位2
         NULL,    //占位3
         NULL,   //4
-        read_int,       //5
+        NULL,       //5
         NULL,     //占位6
         NULL,     //占位7
         NULL,    //8
         NULL,           //9
         NULL,           //10
         print_char,     //11
-        read_char,      //12
     };
+    int isDebugBegin;
+    unsigned int lastPC;
+    int intRequest;//中断值
+    void* intRetValuePtr;
+    int intTriggled;
 };
 
 Mipsc buildComputer();
+void resetRegisterFile(MipscPtr Pmpc);
+void resetPC(MipscPtr Pmpc);
 void mcbuildAssembler(MipscPtr Pmpc, string program);
 void mcbuildDisAssembler(MipscPtr Pmpc, string program);
 void ExecuteCode(Mipsc &mpc, string program, int strType);
 void DebugCode(Mipsc &mpc, string program, int strType);
 static void emptyDisplayMemory(Mipsc &mpc);
 static void setWelcomeStr(Mipsc &mpc);
-static void _execCode(Mipsc &mpc);
-void _debugCode(Mipsc &mpc);
+static void _execCode(Mipsc &mpc, int execmode);
 
 #endif // STIMULATE_H

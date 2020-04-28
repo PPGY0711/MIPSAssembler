@@ -239,6 +239,9 @@ int getLowBits(string s){
 }
 
 int containLetter(string s){
+    s = trim(s);
+    if(s.length() > 2 && s.substr(0,2) == "0x")
+        return 0;
     for(int i = 0; i < strlen(s.c_str());i++){
         if((s[i] <= 'z' && s[i] >= 'a') || (s[i] >= 'A' && s[i] <= 'Z'))
             return 1;
@@ -283,4 +286,28 @@ int getVariableType(string v){
         return 2; //CHAR
     else
         return 1;//STR
+}
+
+string udex2binstr(unsigned int num){
+    char res[33];
+    char tmpres[33];
+    int i = 0;
+    int j = 0;
+    do{
+        if(num%2==0)
+            tmpres[i++] = '0';
+        else
+            tmpres[i++] = '1';
+        num /= 2;
+    }while(num);
+    tmpres[i] = '\0';
+    memset(res,'0',sizeof(char)*33);
+    j = 32 - i;
+    for(i = i - 1; i >= 0 && j < 32; i--){
+        res[j++] = tmpres[i];
+    }
+    res[j] = '\0';
+    string ret(res);
+//    printf("Ret: %s\n",ret);
+    return ret;
 }

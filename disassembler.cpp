@@ -22,7 +22,7 @@ string parseStatement(string bincode, int lineNum){
     int func = binStr2dex(bincode.substr(26,6));
     int r3num = binStr2dex(bincode.substr(6,5));
     string mnemonic = getMnemonic(dms, opc,func,r3num,&iType);
-    cout << "mnemonic: " << mnemonic << " type: " << iType << endl;
+    //cout << "mnemonic: " << mnemonic << " type: " << iType << endl;
     if(mnemonic == "ERROR"){
         //没有对应的就翻译成格式指令
         word = strtoul(bincode.c_str(),NULL,2);
@@ -59,7 +59,7 @@ static string RmcTranslate(string code, string mnemonic){
     rs = dRegs->dRegWordTbl[rsnum];
     rt = dRegs->dRegWordTbl[rtnum];
     rd = dRegs->dRegWordTbl[rdnum];
-    cout << "R: " << "rs: " << rs << "rt: " <<rt << "rd: " << rd << "sa: " << sa << endl;
+    //cout << "R: " << "rs: " << rs << "rt: " <<rt << "rd: " << rd << "sa: " << sa << endl;
     asmcode = "";
     int mnecode = dms->mne2codeTbl[mnemonic];
     /*
@@ -127,7 +127,7 @@ static string RmcTranslate(string code, string mnemonic){
     default:
         break;
     }
-    cout<< "asmcode: " << asmcode<<endl;
+//    cout<< "asmcode: " << asmcode<<endl;
     return asmcode;
 }
 
@@ -138,7 +138,7 @@ static string CmcTranslate(string code, string mnemonic){
     rcnum = strtoul(code.substr(16,5).c_str(),NULL,2);
     rt = dRegs->dRegWordTbl[rtnum];
     rc = dRegs->dRegCoWordTbl[rcnum];
-    cout << "C: " << "rt: " <<rt << "rc: " << rc << endl;
+    //cout << "C: " << "rt: " <<rt << "rc: " << rc << endl;
     asmcode = "";
     int mnecode = dms->mne2codeTbl[mnemonic];
     /*
@@ -166,7 +166,7 @@ static string CmcTranslate(string code, string mnemonic){
     default:
         break;
     }
-    cout<< "asmcode: " << asmcode<<endl;
+//    cout<< "asmcode: " << asmcode<<endl;
     return asmcode;
 }
 
@@ -184,7 +184,7 @@ static string ImcTranslate(string code, string mnemonic, int lineNum){
     uimme_ofs = strtoul(code.substr(16,16).c_str(),NULL,2);
     rs = dRegs->dRegWordTbl[rsnum];
     rt = dRegs->dRegWordTbl[rtnum];
-    cout << "I: " << "rs: " << rs << "rt: " <<rt << "imme_ofs: " << imme_ofs << "uimme_ofs: "<< uimme_ofs << endl;
+   // cout << "I: " << "rs: " << rs << "rt: " <<rt << "imme_ofs: " << imme_ofs << "uimme_ofs: "<< uimme_ofs << endl;
     asmcode = "";
     int mnecode = dms->mne2codeTbl[mnemonic];
     /*
@@ -288,7 +288,7 @@ static string JmcTranslate(string code, string mnemonic ,int lineNum){
     else
         asmcode = mnemonic + " " +revLabelSet[absAddr];
         */
-    asmcode = mnemonic + " " + absAddr;
+    asmcode = mnemonic + " " + udex2str(absAddr);
     return asmcode;
 }
 
@@ -316,7 +316,7 @@ string disassembler(string machinecode){
             lineNum++;
         }
     }
-    cout<< "return main" <<endl;
+//    cout<< "return main" <<endl;
     /*
     map<unsigned int, string>::iterator iter;
     iter = revLabelSet.begin();
@@ -327,18 +327,19 @@ string disassembler(string machinecode){
     }
     */
     map<unsigned int, string>::iterator iter2 = mcv.begin();
+//    cout << "MapSize: " << mcv.size() <<endl;
     while(iter2!=mcv.end()){
-        cout<<"mcv - addr: " << iter2->first <<endl;
-        string addrs = udex2str(iter->first);
-        int dis = 4-addrs.length();
+       // cout<<"mcv - addr: " << iter2->first <<endl;
+        string addrs = udex2str(iter2->first);
+        int dis = 8-addrs.length();
         //补0
         while(dis){
             addrs = " " + addrs;
             dis--;
         }
-        res += addrs + "[" + omcv[iter->first] + "]" + iter2->second +'\n';
+        res += addrs + "[" + omcv[iter2->first] + "]" + iter2->second +'\n';
         iter2++;
     }
-    cout<<"return to widget: " << res <<endl;
+//    cout<<"return to widget: " << res <<endl;
     return res;
 }
