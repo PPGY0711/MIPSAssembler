@@ -205,9 +205,9 @@ static long long getValue(string s)
 {
     s = trim(s);
     long long value;
-    if(s.substr(0,2) == "0x"){
+    if(s.substr(0,2) == "0x" || s.substr(0,2) == "0X"){
         //s为十六进制字符串
-         value = strtoll(s.c_str(),NULL,16);
+         value = strtoll((s.substr(2)).c_str(),NULL,16);
     }
     else{
         //默认为十进制字符串
@@ -227,7 +227,7 @@ int isWithinLimit(string s){
 
 int getHighBits(string s){
     long long value = getValue(s);
-    value = value >> 4;
+    value = value >> 16;
     int v = value&0x0000FFFF;
     return v;
 }
