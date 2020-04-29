@@ -188,11 +188,12 @@ static string repPseudoWithGeneral(string s)
     case 25://"li"
     case 26://"la"
         if(isWithinLimit(regArray[1])){
+            cout << regArray[1] <<endl;
             newstr = "addi " + regArray[0] + ",$zero," + regArray[1];
         }
         else{
             newstr = "lui " + regArray[0] +", HIGH " +regArray[1] +"\n";
-            newstr += "ori " + regArray[0] +", LOW " +regArray[1] +"\n";
+            newstr += "ori " + regArray[0] + ", " + regArray[0] + ", LOW " +regArray[1] +"\n";
         }
         break;
     }
@@ -740,7 +741,7 @@ static void ParseFormatCode(string fcode, ACRec *asmC){
         case 1: //.origin
             newOriginStr = fcode.substr(fcode.find_last_of(' ')+1);
             if(newOriginStr.find("0x")!=string::npos)
-                newOrigin = strtoul(newOriginStr.c_str(),NULL,16);
+                newOrigin = strtoul((newOriginStr.substr(2)).c_str(),NULL,16);
             else
                 newOrigin = strtoul(newOriginStr.c_str(),NULL,10);
             curOrigin = newOrigin;
@@ -758,7 +759,7 @@ static void ParseFormatCode(string fcode, ACRec *asmC){
             vname = fcode.substr(0,fcode.find_first_of(' '));
             vvalue = fcode.substr(fcode.find_last_of(' ')+1);
             if(vvalue.find("0x")!=string::npos)
-                space = strtoul(newOriginStr.c_str(),NULL,16);
+                space = strtoul((newOriginStr.substr(2)).c_str(),NULL,16);
             else
                 space = strtoul(newOriginStr.c_str(),NULL,10);
             PC += space;
@@ -777,7 +778,7 @@ static void ParseFormatCode(string fcode, ACRec *asmC){
                 case NUM:
                     //数字按无符号处理
                     if(vArray[i].substr(0,2) == "0x"){
-                        vnum = strtoul(vArray[i].c_str(),NULL,16);
+                        vnum = strtoul((vArray[i].substr(2)).c_str(),NULL,16);
                     }
                     else
                         vnum = strtoul(vArray[i].c_str(),NULL,10);
@@ -826,7 +827,7 @@ static void ParseFormatCode(string fcode, ACRec *asmC){
                 case NUM:
                     //数字按无符号处理
                     if(vArray[i].substr(0,2) == "0x"){
-                        vnum = strtoul(vArray[i].c_str(),NULL,16);
+                        vnum = strtoul((vArray[i].substr(2)).c_str(),NULL,16);
                     }
                     else
                         vnum = strtoul(vArray[i].c_str(),NULL,10);
@@ -982,12 +983,14 @@ static int calculateExp(string exp, ACRec* asmC)
             if(ts.find("HIGH") != string::npos){
                 string nums = ts.substr(ts.find_last_of('H')+1);
                 nums = trim(nums);
+                cout<<"nums: " <<nums << endl;
                 return getHighBits(nums);
             }
             else
             {
                 string nums = ts.substr(ts.find_last_of('W')+1);
                 nums = trim(nums);
+                cout<<"nums: " <<nums << endl;
                 return getLowBits(nums);
             }
         }
@@ -1001,10 +1004,10 @@ static int calculateExp(string exp, ACRec* asmC)
         && (tmpE.find('/') == string::npos) && (tmpE.find('*') == string::npos)
         && (tmpE.find('(') == string::npos) && (tmpE.find(')') == string::npos))
     {
-        if(tmpE.find('x')==string::npos)
+        if(tmpE.find("0x")==string::npos)
             return atoi(tmpE.c_str());
         else
-            return strtol(tmpE.c_str(),NULL,16);
+            return strtol((tmpE.substr(2)).c_str(),NULL,16);
     }
     //含计算符号
     else {
@@ -1017,7 +1020,7 @@ static int calculateExp(string exp, ACRec* asmC)
             if(tmpE.find('x')==string::npos)
                 return -atoi(tmpE.c_str());
             else
-                return -strtol(tmpE.c_str(),NULL,16);
+                return -strtol((tmpE.substr(2)).c_str(),NULL,16);
         }
         else {
             stack<char> operation;//存放操作符的栈
